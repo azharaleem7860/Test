@@ -1,0 +1,67 @@
+To send GitHub user data to an Excel sheet and retrieve the history of lines added, removed, commits, and pull requests, you can follow these steps:
+
+1. Install the required libraries:
+   - pandas: `pip install pandas`
+   - openpyxl: `pip install openpyxl`
+   - PyGithub: `pip install PyGithub`
+
+2. Import the necessary modules:
+```python
+import pandas as pd
+from openpyxl import Workbook
+from github import Github
+```
+
+3. Authenticate with your GitHub account:
+```python
+g = Github("YOUR_GITHUB_USERNAME", "YOUR_GITHUB_PASSWORD_OR_TOKEN")
+```
+   Alternatively, you can use a personal access token instead of a password.
+
+4. Create an Excel workbook and select the active sheet:
+```python
+wb = Workbook()
+ws = wb.active
+```
+
+5. Define the GitHub username(s) you want to retrieve data for:
+```python
+usernames = ["user1", "user2", "user3"]
+```
+
+6. Iterate over the usernames and retrieve the required data:
+```python
+for username in usernames:
+    user = g.get_user(username)
+    
+    # Retrieve repository data
+    for repo in user.get_repos():
+        # Retrieve commit data
+        for commit in repo.get_commits():
+            commit_data = {
+                "Username": username,
+                "Repository": repo.name,
+                "Commit SHA": commit.sha,
+                "Lines Added": commit.stats.additions,
+                "Lines Removed": commit.stats.deletions
+            }
+            ws.append(commit_data)
+        
+        # Retrieve pull request data
+        for pr in repo.get_pulls():
+            pr_data = {
+                "Username": username,
+                "Repository": repo.name,
+                "Pull Request": pr.title,
+                "Lines Added": pr.additions,
+                "Lines Removed": pr.deletions
+            }
+            ws.append(pr_data)
+```
+
+7. Save the workbook to an Excel file:
+```python
+wb.save("github_data.xlsx")
+```
+
+This code will iterate over the provided GitHub usernames, retrieve commit and pull request data for each repository, and append it to the Excel sheet. The resulting Excel file will contain the history of lines added, removed, commits, and pull requests for each user.

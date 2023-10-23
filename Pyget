@@ -1,0 +1,78 @@
+To get the list of lines added and removed for specific users across all commits and repositories, you can modify the previous program. Here's an updated version that retrieves the information for multiple users and saves it in an Excel sheet:
+
+```python
+import openpyxl
+from openpyxl.styles import Font
+from github import Github
+
+# Replace with your GitHub access token
+ACCESS_TOKEN = 'YOUR_ACCESS_TOKEN'
+
+# List of GitHub usernames to track
+USERS = ['user1', 'user2', 'user3']
+
+# Create a GitHub instance using the access token
+g = Github(ACCESS_TOKEN)
+
+# Create a new Excel workbook and select the active sheet
+wb = openpyxl.Workbook()
+sheet = wb.active
+
+# Set the column headers
+sheet['A1'] = 'Repository'
+sheet['B1'] = 'User'
+sheet['C1'] = 'Lines Added'
+sheet['D1'] = 'Lines Removed'
+
+# Apply bold font to the column headers
+bold_font = Font(bold=True)
+for cell in sheet[1]:
+    cell.font = bold_font
+
+# Initialize the row counter
+row = 2
+
+# Iterate over each user
+for user in USERS:
+    # Get the user object
+    github_user = g.get_user(user)
+
+    # Iterate over each repository of the user
+    for repo in github_user.get_repos():
+        # Get the repository name
+        repo_name = repo.full_name
+
+        # Get the list of commits in the repository
+        commits = repo.get_commits()
+
+        # Iterate over each commit
+        for commit in commits:
+            # Get the commit details
+            commit_details = commit.commit
+
+            # Get the author of the commit
+            author = commit.author
+
+            # Check if the author matches the current user
+            if author.login == user:
+                # Get the stats for the commit
+                stats = commit.stats
+
+                # Get the number of lines added and removed
+                lines_added = stats.additions
+                lines_removed = stats.deletions
+
+                # Write the details to the Excel sheet
+                sheet.cell(row=row, column=1).value = repo_name
+                sheet.cell(row=row, column=2).value = author.login
+                sheet.cell(row=row, column=3).value = lines_added
+                sheet.cell(row=row, column=4).value = lines_removed
+
+                # Increment the row counter
+                row += 1
+
+# Save the workbook
+wb.save('github_stats.xlsx')
+```
+
+Make sure to replace `'YOUR_ACCESS_TOKEN'` with your actual GitHub access token and update the `USERS` list with the GitHub usernames you want to track. The program will iterate over each user's repositories and retrieve the lines added and removed for their commits. The information will be saved in the Excel sheet named `'github_stats.xlsx'`.

@@ -1,0 +1,71 @@
+I apologize for the confusion. If you are encountering a KeyError in the `stage_name` variable, it means that the key `'stageName'` is not present in the `stage` dictionary. To resolve this issue, you need to check the structure of the response dictionary and ensure that you are accessing the correct values.
+
+Here's an updated version of the code that addresses this issue:
+
+```python
+import boto3
+from openpyxl import Workbook
+
+def get_all_pipelines():
+    client = boto3.client('codepipeline')
+    response = client.list_pipelines()
+    return response['pipelines']
+
+def get_pipeline_history(pipeline_name):
+    client = boto3.client('codepipeline')
+    response = client.list_pipeline_executions(pipelineName=pipeline_name)
+    return response['pipelineExecutionSummaries']
+
+def get_pipeline_execution_details(pipeline_name, execution_id):
+    client = boto3.client('codepipeline')
+    response = client.get_pipeline_execution(
+        pipelineName=pipeline_name,
+        pipelineExecutionId=execution_id
+    )
+    return response.get('pipelineExecution')
+
+def write_to_excel(pipeline_name, history, ws):
+    for execution in history:
+        execution_id = execution['pipelineExecutionId']
+        status = execution['status']
+        start_time = execution['startTime']
+        end_time = execution['lastUpdateTime']
+
+        execution_details = get_pipeline_execution_details(pipeline_name, execution_id)
+        if execution_details:
+            stages = execution_details.get('stageStates')
+            if stages:
+                for stage in stages:
+                    stage_name = stage.get('stageName')
+                    if stage_name:
+                        stage_status = stage['latestExecution']['status']
+                        stage_start_time = stage['latestExecution']['startTime']
+                        stage_end_time = stage['latestExecution']['endTime']
+
+                        ws.append([pipeline_name, execution_id, status, start_time, end_time, stage_name, stage_status, stage_start_time, stage_end_time])
+                    else:
+                        print(f"Stage name not found for pipeline: {pipeline_name}, execution ID: {execution_id}")
+        else:
+            print(f"Pipeline execution details not found for pipeline: {pipeline_name}, execution ID: {execution_id}")
+
+def main():
+    pipelines = get_all_pipelines()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.append(['Pipeline Name', 'Execution ID', 'Status', 'Start Time', 'End Time', 'Stage Name', 'Status', 'Start Time', 'End Time'])
+
+    for pipeline in pipelines:
+        pipeline_name = pipeline['name']
+        history = get_pipeline_history(pipeline_name)
+        write_to_excel(pipeline_name, history, ws)
+
+    wb.save('pipeline_history.xlsx')
+
+if __name__ == '__main__':
+    main()
+```
+
+In the updated code, the `stage_name` variable is modified to use `stage.get('stageName')` instead of `stage['stageName']`. This way, if the key `'stageName'` is not present in the `stage` dictionary, it will return `None` instead of raising a KeyError.
+
+By ensuring that you are accessing the correct values from the response dictionary and handling potential missing keys, you can avoid the KeyError in the `stage_name` variable.

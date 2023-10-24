@@ -1,0 +1,53 @@
+To get all the history of the CodePipeline runs with each stage details in an Excel sheet, you can use the AWS SDK for Python (Boto3) to interact with the AWS CodePipeline API and the openpyxl library to create and manipulate Excel files. Here's an example program that demonstrates this:
+
+```python
+import boto3
+from openpyxl import Workbook
+
+def get_pipeline_history(pipeline_name):
+    client = boto3.client('codepipeline')
+    response = client.list_pipeline_executions(pipelineName=pipeline_name)
+    return response['pipelineExecutionSummaries']
+
+def get_pipeline_execution_details(pipeline_name, execution_id):
+    client = boto3.client('codepipeline')
+    response = client.get_pipeline_execution(
+        pipelineName=pipeline_name,
+        pipelineExecutionId=execution_id
+    )
+    return response['pipelineExecution']
+
+def write_to_excel(history):
+    wb = Workbook()
+    ws = wb.active
+    ws.append(['Execution ID', 'Status', 'Start Time', 'End Time', 'Stage Name', 'Status', 'Start Time', 'End Time'])
+
+    for execution in history:
+        execution_id = execution['pipelineExecutionId']
+        status = execution['status']
+        start_time = execution['startTime']
+        end_time = execution['lastUpdateTime']
+
+        execution_details = get_pipeline_execution_details(pipeline_name, execution_id)
+        stages = execution_details['pipelineExecution']['artifactRevisions']
+
+        for stage in stages:
+            stage_name = stage['revisionId']['name']
+            stage_status = stage['status']
+            stage_start_time = stage['created']
+            stage_end_time = stage['lastUpdated']
+
+            ws.append([execution_id, status, start_time, end_time, stage_name, stage_status, stage_start_time, stage_end_time])
+
+    wb.save('pipeline_history.xlsx')
+
+# Replace 'your-pipeline-name' with the actual name of your CodePipeline
+pipeline_name = 'your-pipeline-name'
+
+history = get_pipeline_history(pipeline_name)
+write_to_excel(history)
+```
+
+Make sure you have the `boto3` and `openpyxl` libraries installed (`pip install boto3 openpyxl`) and have configured your AWS credentials using the AWS CLI or environment variables.
+
+This program will retrieve the pipeline execution history for the specified pipeline, including details for each stage, and save it in an Excel file named `pipeline_history.xlsx`. The Excel file will have columns for Execution ID, Status, Start Time, End Time, Stage Name, Stage Status, Stage Start Time, and Stage End Time.

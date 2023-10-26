@@ -1,0 +1,45 @@
+Apologies for the confusion. It seems there was an error in the code. To resolve the issue, you can convert the datetime strings to datetime objects using the `datetime.strptime()` function. Here's the updated code:
+
+```python
+import boto3
+import pandas as pd
+from datetime import datetime
+
+def get_all_pipelines():
+    client = boto3.client('codepipeline')
+    response = client.list_pipelines()
+    return response['pipelines']
+
+def get_pipeline_history(pipeline_name):
+    client = boto3.client('codepipeline')
+    response = client.list_pipeline_executions(pipelineName=pipeline_name)
+    return response['pipelineExecutionSummaries']
+
+def main():
+    pipelines = get_all_pipelines()
+
+    data = []
+    columns = ['Pipeline Name', 'Execution ID', 'Status', 'Start Time', 'End Time']
+
+    for pipeline in pipelines:
+        pipeline_name = pipeline['name']
+        history = get_pipeline_history(pipeline_name)
+
+        for execution in history:
+            execution_id = execution['pipelineExecutionId']
+            status = execution['status']
+            start_time = datetime.strptime(execution['startTime'], '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
+            end_time = datetime.strptime(execution['lastUpdateTime'], '%Y-%m-%dT%H:%M:%S.%f%z').replace(tzinfo=None)
+
+            data.append([pipeline_name, execution_id, status, start_time, end_time])
+
+    df = pd.DataFrame(data, columns=columns)
+    df.to_excel('pipeline_history.xlsx', index=False)
+
+if __name__ == '__main__':
+    main()
+```
+
+In this updated code, the `datetime.strptime()` function is used to parse the datetime strings from the CodePipeline API response. The `%Y-%m-%dT%H:%M:%S.%f%z` format is used to match the datetime format returned by the API, including the timezone information. The `replace(tzinfo=None)` method is then used to remove the timezone information and make the datetimes time unaware.
+
+By using `datetime.strptime()`, you can successfully convert the datetime strings to datetime objects and write them to an Excel sheet without any issues related to time zones.

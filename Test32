@@ -1,0 +1,52 @@
+I apologize for the confusion. If both `datetime.strptime()` and `dateutil.parser.parse()` are giving you issues, you can try using a different approach to parse the datetime strings. Here's an alternative solution using regular expressions:
+
+```python
+import boto3
+import pandas as pd
+import re
+
+def get_all_pipelines():
+    client = boto3.client('codepipeline')
+    response = client.list_pipelines()
+    return response['pipelines']
+
+def get_pipeline_history(pipeline_name):
+    client = boto3.client('codepipeline')
+    response = client.list_pipeline_executions(pipelineName=pipeline_name)
+    return response['pipelineExecutionSummaries']
+
+def parse_datetime(datetime_str):
+    pattern = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3})'
+    match = re.search(pattern, datetime_str)
+    if match:
+        return match.group(1)
+    return None
+
+def main():
+    pipelines = get_all_pipelines()
+
+    data = []
+    columns = ['Pipeline Name', 'Execution ID', 'Status', 'Start Time', 'End Time']
+
+    for pipeline in pipelines:
+        pipeline_name = pipeline['name']
+        history = get_pipeline_history(pipeline_name)
+
+        for execution in history:
+            execution_id = execution['pipelineExecutionId']
+            status = execution['status']
+            start_time = parse_datetime(execution['startTime'])
+            end_time = parse_datetime(execution['lastUpdateTime'])
+
+            data.append([pipeline_name, execution_id, status, start_time, end_time])
+
+    df = pd.DataFrame(data, columns=columns)
+    df.to_excel('pipeline_history.xlsx', index=False)
+
+if __name__ == '__main__':
+    main()
+```
+
+In this updated code, a regular expression pattern is used to extract the datetime strings from the CodePipeline API response. The `parse_datetime()` function uses the regular expression pattern to find the datetime string and returns it. This approach can be used if the datetime strings have a consistent format.
+
+By using regular expressions, you can successfully extract the datetime strings and write them to an Excel sheet without relying on `datetime.strptime()` or `dateutil.parser.parse()`.

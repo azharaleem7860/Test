@@ -1,0 +1,27 @@
+The "Json decode error expecting value: line 1 column 1" error typically occurs when the response from the API is not in valid JSON format. This can happen if there is an issue with the API request or if the API endpoint is not returning the expected response.
+
+To troubleshoot this issue, you can add some error handling and print the response content to see the actual response received from the API. Here's an updated version of the `get_commit_stats` function that includes error handling and response content printing:
+
+```python
+def get_commit_stats(username, repo_name):
+    url = f"https://api.github.com/repos/{username}/{repo_name}/stats/contributors"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        try:
+            return response.json()
+        except ValueError:
+            print("Invalid JSON response:")
+            print(response.content)
+    else:
+        print("Error occurred while fetching commit stats:")
+        print(f"Status Code: {response.status_code}")
+        print(f"Response Content: {response.content}")
+
+    return []
+```
+
+With this updated function, if an error occurs or the response is not in valid JSON format, it will print the error details and the response content. This will help you identify the issue and troubleshoot it further.
+
+Make sure to check the API endpoint, authentication, and any other parameters you are passing to the API to ensure they are correct.

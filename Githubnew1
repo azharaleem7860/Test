@@ -1,0 +1,49 @@
+Yes, you can append the data for each user to the same Excel sheet. Here's how you can modify the program to do this:
+
+```python
+import pandas as pd
+from openpyxl import Workbook, load_workbook
+from github import Github
+from datetime import datetime
+
+# Authenticate with your GitHub personal access token
+g = Github('YOUR_PERSONAL_ACCESS_TOKEN')
+
+# Specify the usernames
+usernames = ['USERNAME1', 'USERNAME2', 'USERNAME3']
+
+# Create a new Workbook if it doesn't exist
+try:
+    book = load_workbook('commit_history_2023.xlsx')
+    writer = pd.ExcelWriter('commit_history_2023.xlsx', engine='openpyxl') 
+    writer.book = book
+except FileNotFoundError:
+    writer = pd.ExcelWriter('commit_history_2023.xlsx', engine='openpyxl')
+
+# Create a DataFrame to store the commit history
+commit_history = pd.DataFrame(columns=['User', 'Repo', 'Commit ID', 'Author', 'Date', 'Lines Added', 'Lines Removed'])
+
+# Fetch the user details, repos, commits, timelines, lines added, and lines removed for each user
+for username in usernames:
+    user = g.get_user(username)
+    
+    for repo in user.get_repos():
+        commits = repo.get_commits(since=datetime(2023, 1, 1), until=datetime(2023, 12, 31))
+        
+        for commit in commits:
+            commit_id = commit.sha
+            author = commit.commit.author.name
+            date = commit.commit.author.date
+            lines_added = commit.stats.additions
+            lines_removed = commit.stats.deletions
+            
+            commit_history = commit_history.append({'User': username, 'Repo': repo.name, 'Commit ID': commit_id, 'Author': author, 'Date': date, 'Lines Added': lines_added, 'Lines Removed': lines_removed}, ignore_index=True)
+
+# Write the DataFrame to the Excel sheet
+commit_history.to_excel(writer, sheet_name='Commit History', index=False)
+
+# Save the changes
+writer.save()
+```
+
+This program will create an Excel file named 'commit_history_2023.xlsx' and append the commit history for each user to it. If the file already exists, it will append the new data to the existing data. Make sure to replace `'YOUR_PERSONAL_ACCESS_TOKEN'` with your actual GitHub personal access token and `'USERNAME1'`, `'USERNAME2'`, `'USERNAME3'` with the actual GitHub usernames.

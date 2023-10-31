@@ -1,0 +1,54 @@
+Apologies for the confusion. To avoid overwriting the previous rows and adding the column names again for new users, you can modify the code to check if the Excel file already exists and if the 'Commit History' sheet is present. If it is, you can load the existing data and append the new data below it. If not, you can create a new sheet and write the data to it. Here's an updated version of the code:
+
+```python
+import pandas as pd
+from openpyxl import load_workbook
+from github import Github
+from datetime import datetime
+
+# Authenticate with your GitHub personal access token
+g = Github('YOUR_PERSONAL_ACCESS_TOKEN')
+
+# Specify the usernames
+usernames = ['USERNAME1', 'USERNAME2', 'USERNAME3']
+
+# Load the existing Excel file or create a new one
+try:
+    commit_history = pd.read_excel('commit_history_2023.xlsx', sheet_name='Commit History')
+    writer = pd.ExcelWriter('commit_history_2023.xlsx', engine='openpyxl')
+    writer.book = load_workbook('commit_history_2023.xlsx')
+    writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
+    start_row = commit_history.shape[0] + 1
+except FileNotFoundError:
+    commit_history = pd.DataFrame(columns=['User', 'Repo', 'Commit ID', 'Author', 'Date', 'Lines Added', 'Lines Removed'])
+    writer = pd.ExcelWriter('commit_history_2023.xlsx', engine='openpyxl')
+    start_row = 0
+
+# Fetch the user details, repos, commits, timelines, lines added, and lines removed for each user
+for username in usernames:
+    user = g.get_user(username)
+    
+    for repo in user.get_repos():
+        commits = repo.get_commits(since=datetime(2023, 1, 1), until=datetime(2023, 12, 31))
+        
+        for commit in commits:
+            commit_id = commit.sha
+            author = commit.commit.author.name
+            date = commit.commit.author.date.strftime('%Y-%m-%d %H:%M:%S %Z%z')  # Convert datetime to string
+            lines_added = commit.stats.additions
+            lines_removed = commit.stats.deletions
+            
+            commit_history = commit_history.append({'User': username, 'Repo': repo.name, 'Commit ID': commit_id, 'Author': author, 'Date': date, 'Lines Added': lines_added, 'Lines Removed': lines_removed}, ignore_index=True)
+
+# Write the DataFrame to the Excel sheet starting from the calculated row index
+commit_history.to_excel(writer, sheet_name='Commit History', index=False, startrow=start_row, header=(start_row == 0))
+
+# Save the changes
+writer.save()
+```
+
+In this updated version, the `start_row` variable is calculated based on whether the Excel file and the 'Commit History' sheet exist. If the file and sheet exist, the `start_row` is set as the number of existing rows plus 1. If the file or sheet doesn't exist, the `start_row` is set as 0.
+
+The `header` parameter in the `to_excel()` function is set to `True` only if `start_row` is 0. This ensures that the column names are written to the sheet only when it is created.
+
+Please note that if the Excel file doesn't exist, it will be created with a single sheet named 'Commit History'. If the file already exists and the 'Commit History' sheet is present, the program will append the data to the existing sheet.

@@ -1,0 +1,9 @@
+Yes, there are alternative ways to connect to a Windows share from a Jenkins pipeline. One option is to use the PowerShell script directly in the pipeline. Here's an example:
+
+groovy pipeline {     agent any          stages {         stage('Connect to Windows Share') {             steps {                 powershell '''                 $username = 'Username'                 $password = 'Password' | ConvertTo-SecureString -AsPlainText -Force                 $credentials = New-Object System.Management.Automation.PSCredential($username, $password)                 $sharePath = '\\Windows-IP\Share-Name'                 $driveLetter = 'Z'                                  # Map the network drive                 New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root $sharePath -Credential $credentials                                  # Access the shared folder                 Get-ChildItem -Path "$driveLetter:\"                                  # Unmap the network drive                 Remove-PSDrive -Name $driveLetter                 '''             }         }     } } 
+
+Replace Username with the username you want to use to connect to the share, Password with the password for the specified username, Windows-IP with the IP address of the Windows machine, and Share-Name with the name of the shared folder.
+
+In this example, the PowerShell script is executed directly in the pipeline using the powershell step. The script uses the New-PSDrive cmdlet to map the network drive to the Windows share using the specified credentials. Then, it performs some operations on the shared folder, such as listing the files using Get-ChildItem. Finally, it unmaps the network drive using Remove-PSDrive.
+
+Make sure that the Jenkins agent running the pipeline has PowerShell installed and accessible in the system's PATH.

@@ -1,0 +1,24 @@
+If you are unable to use the mount command with sudo to access a Windows share in a Jenkins pipeline, you can try using alternative protocols such as SFTP, FTP, or SCP to transfer files to and from the Windows share. Here's how you can use these protocols in a Jenkins pipeline:
+
+1. SFTP:
+You can use the sftp command to securely transfer files to and from the Windows share. Here's an example:
+
+groovy pipeline {     agent any          stages {         stage('Connect to Windows Share') {             steps {                 sh 'sftp <username>@<windows-share-address>:<share-name> <<EOF\n<password>\n<command>\nEOF'             }         }     } } 
+
+Replace <username> with the username to authenticate with, <windows-share-address> with the IP address or hostname of the Windows share, <share-name> with the name of the shared folder, <password> with the corresponding password, and <command> with the SFTP command you want to execute on the Windows share.
+
+2. FTP:
+You can use the ftp command to transfer files to and from the Windows share using the FTP protocol. Here's an example:
+
+groovy pipeline {     agent any          stages {         stage('Connect to Windows Share') {             steps {                 sh 'ftp -n <windows-share-address> <<EOF\nuser <username> <password>\n<command>\nEOF'             }         }     } } 
+
+Replace <windows-share-address> with the IP address or hostname of the Windows share, <username> with the username to authenticate with, <password> with the corresponding password, and <command> with the FTP command you want to execute on the Windows share.
+
+3. SCP:
+You can use the scp command to securely copy files to and from the Windows share. Here's an example:
+
+groovy pipeline {     agent any          stages {         stage('Copy files to Windows Share') {             steps {                 sh 'scp <file-to-copy> <username>@<windows-share-address>:<share-name>'             }         }     } } 
+
+Replace <file-to-copy> with the path to the file you want to copy, <username> with the username to authenticate with, <windows-share-address> with the IP address or hostname of the Windows share, and <share-name> with the name of the shared folder.
+
+Note: Make sure that the Jenkins agent running the pipeline has the necessary permissions to access the Windows share using the chosen protocol.

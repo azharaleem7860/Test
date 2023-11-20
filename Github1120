@@ -1,0 +1,9 @@
+To accomplish this task, you can use the openpyxl library in Python to create and manipulate Excel files. Here's an example program that logs the time of an activity on a set of repositories and saves it in an Excel sheet:
+
+python import openpyxl from datetime import datetime  # Function to log activity time in Excel sheet def log_activity(repo_name, activity):     # Load the Excel sheet     wb = openpyxl.load_workbook('activity_log.xlsx')     sheet = wb.active      # Get the current date and time     now = datetime.now()      # Append the activity and time to the sheet     sheet.append([repo_name, activity, now])      # Save the changes     wb.save('activity_log.xlsx')  # Example usage repos = ['repo1', 'repo2', 'repo3'] activity = 'commit'  for repo in repos:     log_activity(repo, activity) 
+
+Make sure to install the openpyxl library before running this program by executing pip install openpyxl in your terminal.
+
+This program assumes that you have an existing Excel file named activity_log.xlsx in the same directory as the Python script. If the file doesn't exist, it will be created automatically. The program appends the repository name, activity, and current date and time to the sheet.
+
+You can modify the repos list and the activity variable according to your requirements.

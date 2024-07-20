@@ -1,0 +1,45 @@
+To extract the first 7 digits from column B and send the corresponding values from column C to phone numbers in column A using the Twilio API in Python, you can follow these steps:
+
+1. Install the necessary Python libraries: Ensure you have the pandas and twilio libraries installed. You can install them using pip:
+
+pip install pandas twilio
+
+
+2. Use the following Python script to achieve the desired functionality:
+
+import pandas as pd
+from twilio.rest import Client
+
+# Twilio API credentials
+account_sid = 'YOUR_TWILIO_ACCOUNT_SID'
+auth_token = 'YOUR_TWILIO_AUTH_TOKEN'
+sender_phone_number = 'YOUR_TWILIO_PHONE_NUMBER'
+
+# Initialize Twilio client
+client = Client(account_sid, auth_token)
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to extract first 7 digits
+def extract_first_7_digits(value):
+    return str(value)[:7]
+
+# Iterate through each row in the DataFrame and send messages
+for index, row in df.iterrows():
+    phone_number = row['Column A']
+    extracted_value = extract_first_7_digits(row['Column B'])
+    message = row['Column C']
+
+    message = client.messages.create(
+        body=message,
+        from_=sender_phone_number,
+        to=phone_number
+    )
+
+    print(f"Message sent to {phone_number} with extracted value {extracted_value}: SID - {message.sid}")
+
+
+Make sure to replace 'YOUR_TWILIO_ACCOUNT_SID', 'YOUR_TWILIO_AUTH_TOKEN', 'YOUR_TWILIO_PHONE_NUMBER', and 'data.xlsx' with your actual Twilio API credentials, Twilio phone number, and the path to your Excel sheet containing the data.
+
+This script reads the data from the Excel sheet, extracts the first 7 digits from column B, and sends the corresponding values from column C to phone numbers in column A using the Twilio API. Adjust the column names and data manipulation functions as needed to match your specific Excel sheet structure.

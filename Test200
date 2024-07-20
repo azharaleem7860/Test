@@ -1,0 +1,43 @@
+To send messages to both phone numbers in column A and email addresses in column D using the Twilio API in Python, you can modify the previous script as follows:
+
+import pandas as pd
+from twilio.rest import Client
+
+# Twilio API credentials
+account_sid = 'YOUR_TWILIO_ACCOUNT_SID'
+auth_token = 'YOUR_TWILIO_AUTH_TOKEN'
+sender_phone_number = 'YOUR_TWILIO_PHONE_NUMBER'
+
+# Initialize Twilio client
+client = Client(account_sid, auth_token)
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to extract first 7 digits
+def extract_first_7_digits(value):
+    return str(value)[:7]
+
+# Iterate through each row in the DataFrame and send messages
+for index, row in df.iterrows():
+    phone_number = row['Column A']
+    email = row['Column D']
+    extracted_value = extract_first_7_digits(row['Column B'])
+    message = row['Column C']
+
+    # Send message to phone number
+    phone_message = client.messages.create(
+        body=message,
+        from_=sender_phone_number,
+        to=phone_number
+    )
+
+    # Send email to email address
+    # Add your code to send email here
+
+    print(f"Message sent to {phone_number} with extracted value {extracted_value}: SID - {phone_message.sid}")
+
+
+In this modified script, we are reading data from an Excel sheet containing columns A, B, C, and D. The script extracts the first 7 digits from column B, sends the message from column C to the phone number in column A using the Twilio API, and then sends an email to the email address in column D.
+
+You will need to use an email sending library or service to send emails to the email addresses in column D. You can use libraries like smtplib for sending emails via SMTP or third-party services like SendGrid or AWS SES for sending emails programmatically. Integrate the email sending code inside the loop where the phone message is sent.

@@ -1,0 +1,44 @@
+To validate the Challenge Code in column D based on the presence of special characters in the first 8 characters and ensuring the 9th character is a hyphen ('-') without removing the special characters, you can update the Python script as follows:
+
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to validate and format phone numbers
+def format_phone_number(phone_number):
+    phone_number = str(phone_number)
+    
+    # Remove hyphens
+    phone_number = phone_number.replace('-', '')
+    
+    # Check if the phone number has 10 digits
+    if re.match(r'^\d{10}$', phone_number):
+        return '+1' + phone_number
+    else:
+        return None
+
+# Function to validate Challenge Code
+def validate_challenge_code(code):
+    code = str(code)
+    
+    # Check if the first 8 characters contain any special characters and the 9th character is a hyphen
+    if re.match(r'^[^\w]{0,8}-', code):
+        return 'Not Valid'
+    else:
+        return 'Valid'
+
+# Add a new column 'Challenge Code Validity' in the DataFrame
+df['Challenge Code Validity'] = df['Challenge Code'].apply(validate_challenge_code)
+
+# Save the updated DataFrame with the new column to a new Excel file
+df.to_excel('data_with_challenge_code_validity.xlsx', index=False)
+
+
+In this updated script:
+- The validate_challenge_code function checks if the first 8 characters contain any special characters ([^\w]{0,8}) followed by a hyphen (-).
+- A new column 'Challenge Code Validity' is added to the DataFrame with the validation result for each Challenge Code.
+- The updated DataFrame with the new column indicating the validity of the Challenge Codes is saved to a new Excel file named 'data_with_challenge_code_validity.xlsx'.
+
+Make sure to replace 'data.xlsx' with the actual path to your Excel sheet and adjust the validation logic as needed based on your specific requirements.

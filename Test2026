@@ -1,0 +1,61 @@
+To validate the 'Challenge Code' data in column D of the Excel sheet for the format of 8 alphanumeric characters followed by a hyphen ('-') and mark it as 'Not Valid' in the same column if the condition fails, you can update the Python script as follows:
+
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to validate and format phone numbers
+def format_phone_number(phone_number):
+    phone_number = str(phone_number)
+    
+    # Remove hyphens
+    phone_number = phone_number.replace('-', '')
+    
+    # Check if the phone number has 10 digits
+    if re.match(r'^\d{10}$', phone_number):
+        return '+1' + phone_number
+    else:
+        return None
+
+# Function to validate and mark Challenge Code
+def validate_challenge_code(code):
+    code = str(code)
+    
+    # Check if the code has the format of 8 alphanumeric characters followed by a hyphen
+    if re.match(r'^[a-zA-Z0-9]{8}-$', code):
+        return code
+    else:
+        return 'Not Valid'
+
+# Iterate through each row in the DataFrame and update Challenge Code
+for index, row in df.iterrows():
+    phone_number = row['Cell Number']
+    formatted_phone_number = format_phone_number(phone_number)
+    
+    challenge_code = row['Challenge Code']
+    validated_code = validate_challenge_code(challenge_code)
+    
+    if formatted_phone_number:
+        df.at[index, 'Cell Number'] = formatted_phone_number
+        print(f"Row {index + 2}: Phone number formatted to {formatted_phone_number}")
+    
+    if validated_code:
+        df.at[index, 'Challenge Code'] = validated_code
+        print(f"Row {index + 2}: Challenge Code validation result: {validated_code}")
+    else:
+        df.at[index, 'Challenge Code'] = 'Not Valid'
+        print(f"Row {index + 2}: Challenge Code marked as Not Valid")
+
+# Save the updated DataFrame with formatted phone numbers and validated Challenge Codes to a new Excel file
+df.to_excel('data_with_formatted_numbers_and_validation.xlsx', index=False)
+
+
+In this updated script:
+- The validate_challenge_code function checks the 'Challenge Code' data for the specified format of 8 alphanumeric characters followed by a hyphen.
+- If the Challenge Code does not match the format, it is marked as 'Not Valid' in the same column.
+- The script iterates through the DataFrame, formats the phone numbers in the 'Cell Number' column, and validates the Challenge Codes in the 'Challenge Code' column.
+- The updated DataFrame with the formatted phone numbers and validated Challenge Codes is saved to a new Excel file named data_with_formatted_numbers_and_validation.xlsx.
+
+Make sure to replace 'data.xlsx' with the actual path to your Excel sheet and adjust the column names and validation logic as needed based on your specific requirements.

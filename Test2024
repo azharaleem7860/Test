@@ -1,0 +1,46 @@
+To track the delivery status of the messages sent using the Twilio API and update this information in another column in the Excel sheet, you can modify the Python script as follows:
+
+import pandas as pd
+from twilio.rest import Client
+
+# Twilio API credentials
+account_sid = 'YOUR_TWILIO_ACCOUNT_SID'
+auth_token = 'YOUR_TWILIO_AUTH_TOKEN'
+sender_phone_number = 'YOUR_TWILIO_PHONE_NUMBER'
+
+# Initialize Twilio client
+client = Client(account_sid, auth_token)
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to extract first 7 digits
+def extract_first_7_digits(value):
+    return str(value)[:7]
+
+# Iterate through each row in the DataFrame and send messages
+for index, row in df.iterrows():
+    phone_number = row['Column A']
+    extracted_value = extract_first_7_digits(row['Column B'])
+    message_body = row['Column C']
+
+    message = client.messages.create(
+        body=message_body,
+        from_=sender_phone_number,
+        to=phone_number
+    )
+
+    # Update delivery status in another column
+    df.at[index, 'Delivery Status'] = message.status
+
+    print(f"Message sent to {phone_number} with extracted value {extracted_value}: SID - {message.sid}, Status - {message.status}")
+
+# Save the updated DataFrame with delivery status to a new Excel file
+df.to_excel('data_with_status.xlsx', index=False)
+
+
+In this updated script, after sending the message using the Twilio API, the delivery status of each message is retrieved from the Twilio response object (message.status) and updated in a new column named 'Delivery Status' in the DataFrame. Finally, the updated DataFrame with the delivery status information is saved to a new Excel file named 'data_with_status.xlsx'.
+
+Make sure to replace 'YOUR_TWILIO_ACCOUNT_SID', 'YOUR_TWILIO_AUTH_TOKEN', 'YOUR_TWILIO_PHONE_NUMBER', and 'data.xlsx' with your actual Twilio API credentials, Twilio phone number, and the path to your Excel sheet containing the data.
+
+This way, you can track the delivery status of the messages and store this information in another column for further analysis or reporting.

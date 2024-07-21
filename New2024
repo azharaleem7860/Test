@@ -1,0 +1,45 @@
+To validate an Excel sheet to check for specific criteria in each column (phone number, alphanumeric string, and numeric string with special characters), you can use the pandas library in Python to read the Excel sheet and apply validation checks. Here is an example Python program that validates the columns as per the provided criteria:
+
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to validate phone number format
+def validate_phone_number(phone_number):
+    if re.match(r'^\d{10}$', phone_number):
+        return True
+    return False
+
+# Function to validate alphanumeric string format
+def validate_alphanumeric_string(string):
+    if re.match(r'^[a-zA-Z0-9]{8}$', string):
+        return True
+    return False
+
+# Function to validate numeric string with special characters format
+def validate_numeric_string(string):
+    if re.match(r'^[0-9]{48}-[0-9]{7}$', string):
+        return True
+    return False
+
+# Iterate through each row in the DataFrame and perform validation
+for index, row in df.iterrows():
+    phone_number = str(row['Column A'])
+    alpha_numeric_string = str(row['Column B'])
+    numeric_string = str(row['Column C'])
+
+    if validate_phone_number(phone_number) and validate_alphanumeric_string(alpha_numeric_string) and validate_numeric_string(numeric_string):
+        print(f"Row {index + 2}: Data is valid")
+    else:
+        print(f"Row {index + 2}: Data is invalid")
+
+
+
+In this script:
+- The validate_phone_number, validate_alphanumeric_string, and validate_numeric_string functions use regular expressions to check for the specified criteria in each column.
+- The script iterates through each row of the DataFrame, extracts the values from each column, and validates them using the defined functions.
+- If the data in a row meets all the validation criteria, it prints that the data is valid. Otherwise, it prints that the data is invalid.
+
+You can adjust the regular expressions and validation criteria as needed based on your specific requirements. Make sure to replace 'data.xlsx' with the actual path to your Excel sheet.

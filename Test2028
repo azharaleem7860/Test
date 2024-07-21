@@ -1,0 +1,60 @@
+To integrate the validation of the Bitlocker Key in column E with the existing program that validates the Challenge Code in column D, you can update the Python script as follows:
+
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to validate and format phone numbers
+def format_phone_number(phone_number):
+    phone_number = str(phone_number)
+    
+    # Remove hyphens
+    phone_number = phone_number.replace('-', '')
+    
+    # Check if the phone number has 10 digits
+    if re.match(r'^\d{10}$', phone_number):
+        return '+1' + phone_number
+    else:
+        return None
+
+# Function to validate Challenge Code
+def validate_challenge_code(code):
+    code = str(code)
+    
+    # Check if the code has the format of 8 alphanumeric characters followed by a hyphen
+    if re.match(r'^[a-zA-Z0-9]{8}-$', code):
+        return 'Valid'
+    else:
+        return 'Not Valid'
+
+# Function to validate Bitlocker Key
+def validate_bitlocker_key(key):
+    key = str(key)
+    
+    # Check if the key has the format of 55 characters with six numbers followed by a hyphen
+    if re.match(r'^\D{49}\d{6}-\D{0,}', key):
+        return 'Valid'
+    else:
+        return 'Not Valid'
+
+# Iterate through each row in the DataFrame and update Challenge Code and Bitlocker Key
+for index, row in df.iterrows():
+    challenge_code = row['Challenge Code']
+    bitlocker_key = row['Bitlocker Key']
+    
+    df.at[index, 'Challenge Code Validation'] = validate_challenge_code(challenge_code)
+    df.at[index, 'Bitlocker Key Validation'] = validate_bitlocker_key(bitlocker_key)
+
+# Save the updated DataFrame with validation results to a new Excel file
+df.to_excel('data_with_validation_results.xlsx', index=False)
+
+
+In this updated script:
+- The existing functions for validating the Challenge Code and formatting phone numbers remain the same.
+- A new function validate_bitlocker_key is added to validate the Bitlocker Key in column E.
+- The script iterates through each row in the DataFrame, validates the Challenge Code and Bitlocker Key, and adds the validation results to new columns 'Challenge Code Validation' and 'Bitlocker Key Validation'.
+- The updated DataFrame with the validation results for both Challenge Code and Bitlocker Key is saved to a new Excel file named 'data_with_validation_results.xlsx'.
+
+Please ensure that you replace 'data.xlsx' with the path to your actual Excel sheet. Adjust the regular expressions and validation logic as needed based on your specific requirements.

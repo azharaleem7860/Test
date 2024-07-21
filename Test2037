@@ -1,0 +1,103 @@
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to validate and format phone numbers
+def format_phone_number(phone_number):
+    phone_number = str(phone_number)
+    
+    # Remove hyphens
+    phone_number = phone_number.replace('-', '')
+    
+    # Check if the phone number has 10 digits
+    if re.match(r'^\d{10}$', phone_number):
+        return '+1' + phone_number
+    else:
+        return None
+
+# Function to validate Challenge Code
+def validate_challenge_code(code):
+    code = str(code)
+    
+    # Check if the first 8 characters contain any special characters and the 9th character is a hyphen
+    if re.match(r'^[^\w]{0,8}-', code):
+        return 'Not Valid'
+    else:
+        return 'Valid'
+
+# Function to validate Bitlocker Key
+def validate_bitlocker_key(key):
+    key = str(key)
+    
+    # Check if the key has the specific format of 6 numbers followed by a hyphen, repeated 8 times, and overall length of 55
+    if re.match(r'^\d{6}(-\d{6}){7}$', key) and len(key) == 55:
+        return 'Valid'
+    else:
+        return 'Not Valid'
+
+# Function to validate Cell Number
+def validate_cell_number(cell_number):
+    cell_number = str(cell_number)
+    
+    # Check if the cell number has 10 digits
+    if re.match(r'^\d{10}$', cell_number):
+        return '+1' + cell_number
+    else:
+        return None
+
+# Validate no null values or blanks in Employee ID, Cell Number, Device Number, Challenge Code, and Bitlocker Key
+for column in ['Employee ID', 'Cell Number', 'Device Number', 'Challenge Code', 'Bitlocker Key']:
+    df[column + ' Validation'] = df[column].apply(lambda x: 'Valid' if x and not pd.isnull(x) else 'Not Valid')
+
+# Function to validate unique entries for the same Employee ID with the same Cell Number but different devices
+def validate_multiple_entries(row):
+    employee_id = row['Employee ID']
+    cell_number = row['Cell Number']
+    device_number = row['Device Number']
+    
+    # Check for unique entries with the same Employee ID and Cell Number but different Device Numbers
+    if df[(df['Employee ID'] == employee_id) & (df['Cell Number'] == cell_number) & (df['Device Number'] != device_number)].shape[0] > 0:
+        return 'Multiple Entries'
+    else:
+        return 'Unique'
+
+# Add a new column 'Entry Validation' in the DataFrame
+df['Entry Validation'] = df.apply(validate_multiple_entries, axis=1)
+
+# Function to identify duplicate Bitlocker Keys
+def identify_duplicate_bitlocker_key(key):
+    key = str(key)
+    
+    # Check for duplicate Bitlocker Keys
+    if df['Bitlocker Key'].duplicated().any():
+        return 'Duplicate'
+    else:
+        return 'Unique'
+
+# Add a new column 'Bitlocker Key Duplicate' in the DataFrame
+df['Bitlocker Key Duplicate'] = df['Bitlocker Key'].apply(identify_duplicate_bitlocker_key)
+
+# Function to identify duplicate Challenge Codes
+def identify_duplicate_challenge_code(code):
+    code = str(code)
+    
+    # Check for duplicate Challenge Codes
+    if df['Challenge Code'].duplicated().any():
+        return 'Duplicate'
+    else:
+        return 'Unique'
+
+# Add a new column 'Challenge Code Duplicate' in the DataFrame
+df['Challenge Code Duplicate'] = df['Challenge Code'].apply(identify_duplicate_challenge_code)
+
+# Add a new column 'Cell Number Validation' in the DataFrame
+df['Cell Number Validation'] = df['Cell Number'].apply(validate_cell_number)
+
+# Add new columns for Challenge Code and Bitlocker Key validation results
+df['Challenge Code Validity'] = df['Challenge Code'].apply(validate_challenge_code)
+df['Bitlocker Key Validity'] = df['Bitlocker Key'].apply(validate_bitlocker_key)
+
+# Save the updated DataFrame with the validation results to a new Excel file
+df.to_excel('data_with_validation_results.xlsx', index=False)

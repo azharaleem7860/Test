@@ -1,0 +1,47 @@
+To include the validation logic for checking no null values or blanks in specified columns (Employee ID, Cell Number, Device Number, Challenge Code, Bitlocker Key) and add an additional column specifying the validation status for each column, you can update the existing script as follows:
+
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to validate Challenge Code
+def validate_challenge_code(code):
+    code = str(code)
+    
+    # Check if the first 8 characters contain any special characters and the 9th character is a hyphen
+    if re.match(r'^[^\w]{0,8}-', code):
+        return 'Not Valid'
+    else:
+        return 'Valid'
+
+# Function to validate Bitlocker Key
+def validate_bitlocker_key(key):
+    key = str(key)
+    
+    # Check if the key has the specific format of 6 numbers followed by a hyphen, repeated 8 times, and overall length of 55
+    if re.match(r'^\d{6}(-\d{6}){7}$', key) and len(key) == 55:
+        return 'Valid'
+    else:
+        return 'Not Valid'
+
+# Validate no null values or blanks in Employee ID, Cell Number, Device Number, Challenge Code, and Bitlocker Key
+for column in ['Employee ID', 'Cell Number', 'Device Number', 'Challenge Code', 'Bitlocker Key']:
+    df[column + ' Validation'] = df[column].apply(lambda x: 'Valid' if x and not pd.isnull(x) else 'Not Valid')
+
+# Add new columns for Challenge Code and Bitlocker Key validation results
+df['Challenge Code Validity'] = df['Challenge Code'].apply(validate_challenge_code)
+df['Bitlocker Key Validity'] = df['Bitlocker Key'].apply(validate_bitlocker_key)
+
+# Save the updated DataFrame with the validation results to a new Excel file
+df.to_excel('data_with_validation_results.xlsx', index=False)
+
+
+In this updated script:
+- The script now validates the presence of null values or blanks in the specified columns (Employee ID, Cell Number, Device Number, Challenge Code, Bitlocker Key) and adds additional columns specifying the validation status for each column.
+- The existing validation functions for Challenge Code and Bitlocker Key remain the same.
+- New columns are added to the DataFrame with the validation status for each specified column.
+- The updated DataFrame with the validation results for all columns is saved to a new Excel file named 'data_with_validation_results.xlsx'.
+
+Replace 'data.xlsx' with the actual path to your Excel sheet. Adjust the validation logic and column names as needed based on your specific column names and requirements. Run this script in your Python environment to validate the specified columns and generate the new Excel file with validation results.

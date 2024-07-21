@@ -1,0 +1,25 @@
+To validate the Challenge Code in column D based on the requirement that the first 8 characters must be numbers or alphabets, and the 9th character must be a hyphen ('-'), you can update the Python script as follows:
+
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to validate Challenge Code
+def validate_challenge_code(code):
+    code = str(code)
+    
+    # Check if the first 8 characters are numbers or alphabets and the 9th character is a hyphen
+    if re.match(r'^[a-zA-Z0-9]{8}-', code):
+        return 'Valid'
+    else:
+        return 'Not Valid'
+
+# Add a new column 'Challenge Code Validity' in the DataFrame
+df['Challenge Code Validity'] = df['Challenge Code'].apply(validate_challenge_code)
+
+# Save the updated DataFrame with the new column to a new Excel file
+df.to_excel('data_with_challenge_code_validity.xlsx', index=False)
+
+

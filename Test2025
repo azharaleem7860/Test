@@ -1,0 +1,36 @@
+If the phone number column is named 'Cell Number' and it is located in column B, and you want to update the phone numbers in the same column by removing hyphens and adding the +1 country code at the beginning, you can modify the Python script accordingly. Here's an updated version of the script:
+
+import pandas as pd
+import re
+
+# Read data from the Excel sheet
+df = pd.read_excel('data.xlsx')
+
+# Function to format phone numbers
+def format_phone_number(phone_number):
+    phone_number = str(phone_number)
+    
+    # Remove hyphens
+    phone_number = phone_number.replace('-', '')
+    
+    # Check if the phone number has 10 digits
+    if re.match(r'^\d{10}$', phone_number):
+        return '+1' + phone_number
+    else:
+        return None
+
+# Iterate through each row in the DataFrame and update phone numbers
+for index, row in df.iterrows():
+    phone_number = row['Cell Number']
+    formatted_phone_number = format_phone_number(phone_number)
+    
+    if formatted_phone_number:
+        df.at[index, 'Cell Number'] = formatted_phone_number
+        print(f"Row {index + 2}: Phone number formatted to {formatted_phone_number}")
+    else:
+        print(f"Row {index + 2}: Invalid phone number format")
+
+# Save the updated DataFrame with formatted phone numbers to a new Excel file
+df.to_excel('data_with_formatted_numbers.xlsx', index=False)
+
+

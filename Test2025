@@ -1,25 +1,53 @@
-Thank you for providing the data source and data dictionary links. Based on the provided information, you can modify the Python code to fetch and analyze COVID-19 testing data from the specified data source. Here is an updated version of the Python code:
 
 import requests
 import pandas as pd
 from datetime import date, timedelta
+import warnings
 
-# Function to get COVID-19 testing data from the specified API
-def get_testing_data():
-    url = "https://healthdata.gov/resource/j8mb-icvb.json"
-    response = requests.get(url)
+# Function to fetch data from a specified URL 
+def fetch_data(url):
+    response = requests.get(url, verify=False)
     data = response.json()
     return data
 
+# Function to get total number of pages  from a specified URL 
+def get_total_pages(response):
+    total_pages = int(response.headers.get('X-Total-Pages', 1))
+    return total_pages
+
+#Function to get the total number of pages in the API response 
+def get_total_pages_from_api(base_url):
+    url = f"{base_url}?$limit=1"
+    response = requests.get(url, verify=False)
+    total_pages = get_total_pages(response)
+    return total_pages
+
+def get_testing_data_all_pages(base_url, limit=2000):
+    total_pages = get_total_pages_from_api(base_url)
+    all_data = []
+    for page in range(1, total_pages + 1):
+        
+        url = f"{base_url}?$limit={limit}$offset={(page-1)*limit}"
+        response = requests.get(url, verify=False)
+        data = response.json()
+        all_data.extend(data)
+        return all_data
+    
+        
+
 # Function to calculate the total number of PCR tests performed as of yesterday
 def total_pcr_tests(data):
-    pcr_tests = sum(int(entry['total_pcr_testing']) for entry in data)
-    return pcr_tests
+    total_tests = 0
+    for entry in data:
+        if 'pcr_tests_positive' in entry and 'pcr_tests_negative' in entry:
+            total_tests += entry ['pcr_tests_positive'] + entry['pcr_test_negative']
+    #pcr_tests = sum(int(entry['total_results_reported']) for entry in data)
+            return total_tests
 
 # Function to calculate the 7-day rolling average number of new cases per day for the last 30 days
 def rolling_average_new_cases(data):
     df = pd.DataFrame(data)
-    df['date'] = pd.to_datetime(df['specimen_collection_date'])
+    df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values('date')
     df['new_cases'] = df['new_results_reported'].astype(int)
     rolling_avg = df['new_cases'].rolling(window=7).mean()
@@ -29,34 +57,48 @@ def rolling_average_new_cases(data):
 # Function to calculate the 10 states with the highest test positivity rate for tests performed in the last 30 days
 def highest_test_positivity_states(data):
     df = pd.DataFrame(data)
-    df['date'] = pd.to_datetime(df['specimen_collection_date'])
+    df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values('date')
-    last_30_days_data = df[df['date'] >= (date.today() - timedelta(days=30))]
-    last_30_days_data['test_positivity_rate'] = last_30_days_data['positive_tests'] / last_30_days_data['total_tests']
+    last_30_days_data = df[df['date'] >= (pd.Timestamp(date.today()) - timedelta(days=30))]
+    last_30_days_data['test_positivity_rate'] = pd.to_numeric(last_30_days_data['new_results_reported']) / pd.to_numeric(last_30_days_data['total_results_reported'])
     top_10_states = last_30_days_data.groupby('state').mean()['test_positivity_rate'].nlargest(10)
-    return top_10_states
+    top_10_states_names = top_10_states.index.tolist()
+    return top_10_states_names
+
+# Function to calculate the 10 states with the highest test positivity rate based on all available data dates
+
+
+
+
+
 
 # Main function to run the analysis
 def main():
-    data = get_testing_data()
+    base_url = "https://healthdata.gov/resource/j8mb-icvb.json"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore") #Ingore warnings
+        total_pages = get_total_pages_from_api(base_url)
+        print(f"Total number of pages in the API response: {total_pages}")
+        data = get_testing_data_all_pages(base_url, limit=2000)
+        #total_pages = get_total_pages(data)
+        #print(f"Total number of pages in the API response: {total_pages}")
     
-    total_pcr_tests_result = total_pcr_tests(data)
-    print(f"Total number of PCR tests performed as of yesterday: {total_pcr_tests_result}")
+        total_pcr_tests_result = total_pcr_tests(data)
+        print(f"Total number of PCR tests performed as of yesterday: {total_pcr_tests_result}")
     
-    rolling_avg_new_cases = rolling_average_new_cases(data)
-    print(f"7-day rolling average number of new cases per day for the last 30 days: {rolling_avg_new_cases}")
+        rolling_avg_new_cases = rolling_average_new_cases(data)
+        print(f"7-day rolling average number of new cases per day for the last 30 days: {rolling_avg_new_cases}")
     
-    highest_test_positivity_states_result = highest_test_positivity_states(data)
-    print("Top 10 states with the highest test positivity rate in the last 30 days:")
-    print(highest_test_positivity_states_result)
+    #top_state_result = top_states_highest_test_positivity(data)
+    #print("top 10 states from all the data")
+    #print(top_state_result)
+        highest_test_positivity_states_result = highest_test_positivity_states(data)
+        print("Top 10 states with the highest test positivity rate in the last 30 days:")
+        print(highest_test_positivity_states_result)
+        for state in highest_test_positivity_states_result:
+            print(state)
 
 if __name__ == "__main__":
     main()
 
 
-In this updated code:
-- The API endpoint is set to the specified data source URL.
-- The data parsing logic is adjusted based on the data dictionary provided in the link.
-- The metrics calculation functions are modified to reflect the data fields and structure from the provided data dictionary.
-
-You can run this code to analyze COVID-19 testing data from the specified source and generate the metrics as requested. Please ensure to review the data dictionary for field definitions and adjust the code accordingly if needed.

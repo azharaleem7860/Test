@@ -1,0 +1,86 @@
+
+import requests
+import pandas as pd
+from datetime import date, timedelta
+import warnings
+
+# Function to get COVID-19 testing data from the specified API
+def get_testing_data(url): 
+    page = 1
+    #record_count = 1 #Variable defined to be used in the for loop to get the record number along with the record details 
+    
+    
+# Calculate total PCR Tests
+
+    while True:
+        params = {'$limit':20000, '$offset': (page -1 ) * 20000} # Adjust limit as needed
+        response = requests.get(url, params=params, verify=False)
+        page_data = response.json()
+        
+        
+        if not page_data:
+            break
+        
+        print(f"page number is:{page}")
+        
+        # Enable for loop to get the records printed with the record numbers to cross validate with the source to avoid any discrepancies
+        #for record in page_data:
+        #    print(f"Record {record_count}: {record}")
+        #    record_count += 1
+        
+        page +=1
+    page
+    print (f"page data is {page_data}")
+    return page_data
+    
+    
+        
+#Function to get the total number of PCR tests performed as of yesterday in the United States 
+
+def get_total_pcr_tests(page_data):
+    df = pd.DataFrame(page_data)
+    yesterday = date.today() - timedelta(days=1)
+    print(f"yesterday date is {yesterday}")
+    total_pcr_tests = 0
+    #url = f"{url}?date={yesterday.strftime('%Y-%m-%d')}" #Add date filter to the URL 
+    #print(f"Updated url is {url}")
+
+    
+    # Calculate total PCR tests based on available fields
+    
+    for record in df:
+        record_date = record.get('date', '')
+        print(f"todays date is {date.today()}")
+        print(f"record date is {record_date}")
+        print(f"total results reported {record.get('total_results_reported')}")
+        if record_date != date.today():
+            total_pcr_tests += int(record.get('total_results_reported', 0))
+            print(f"total PCR tests is {total_pcr_tests}")
+    return total_pcr_tests
+        
+        
+    
+
+
+
+
+
+# Main function to run the analysis
+def main():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore") #Ingore warnings
+        #date = "2024-05-21"
+        base_url = "https://healthdata.gov/resource/j8mb-icvb.json"
+        page_data = get_testing_data(base_url)
+        total_pcr_tests = get_total_pcr_tests(page_data )
+        print(f"Total PCR tests performed as of yesterday in the United States: {total_pcr_tests}")
+       
+        
+    
+    
+        
+
+if __name__ == "__main__":
+    main()
+
+

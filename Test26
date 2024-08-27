@@ -1,52 +1,126 @@
-To ensure that the systemctl start docker command runs automatically on reboot of the machine in Linux, you can create a systemd service unit file for Docker and enable it to start on boot.
 
-Here's how you can do it:
+from decimal import Decimal, ROUND_HALF_UP
+import requests
+import pandas as pd
+from datetime import date, timedelta
+import warnings
+import math
 
-1. Create a systemd service unit file for Docker:
+# Function to get COVID-19 testing data from the specified API
+def get_testing_data(url): 
+    page = 1
+    all_data = []
+    #record_count = 1 #Variable defined to be used in the for loop to get the record number along with the record details 
+    
+    
+# Calculate total PCR Tests
 
-sudo nano /etc/systemd/system/docker.service
+    while True:
+        params = {'$limit':20000, '$offset': (page -1 ) * 20000} # Adjust limit as needed
+        response = requests.get(url, params=params, verify=False)
+        page_data = response.json()
+        
+        
+        if not page_data:
+            break
+        
+        print(f"page number is:{page}")
+        
+        # Enable for loop to get the records printed with the record numbers to cross validate with the source to avoid any discrepancies
+        #for record in page_data:
+        #    print(f"Record {record_count}: {record}")
+        #    record_count += 1
+        all_data.extend(page_data)
+        page +=1
+    return all_data
+    
+    
+        
+#Function to get the total number of PCR tests performed as of yesterday in the United States 
+
+def get_total_pcr_tests(full_api_data, target_date):
+    df = pd.DataFrame(full_api_data)
+    #yesterday = date.today() - timedelta(days=1)
+    print(f"Target date is {target_date}")
+    total_pcr_tests = 0
+    #url = f"{url}?date={yesterday.strftime('%Y-%m-%d')}" #Add date filter to the URL 
+    #print(f"Updated url is {url}")
+
+    
+    # Calculate total PCR tests based on available fields
+    
+    for _, record in df.iterrows():
+        record_date = record.get('date', '')
+        #print(f"todays date is {date.today()}")
+        #print(f"record date is {record_date}")
+        #print(f"total results reported {record.get('total_results_reported')}")
+        if record_date <= target_date:
+            total_pcr_tests += int(record.get('total_results_reported', 0))
+            
+            
+    return total_pcr_tests
+        
+#Function to Calculate the 7-day rolling average of new cases per day for the last 30 days from the target date         
+def calculate_rolling_average(full_api_data, target_date):
+    df = pd.DataFrame(full_api_data)
+    
+    print(f"Target date for rolling average is {target_date}")
+    
+    rolling_average = []
+    
+    for i in range(30):
+        start_date = target_date - timedelta(days= i+30)
+        print(f"start date is {start_date}")
+        end_date = target_date - timedelta(days=i+23)
+        print(f"end date is {end_date}")
+        start_date_str = start_date.strftime('%Y-%m-%d')
+        end_date_str = end_date.strftime('%Y-%m-%d')
+        df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
+
+        new_cases = df[(df['date'] >= start_date_str) & (df['date'] <= end_date_str)]['new_results_reported'].sum()
+        new_cases = int(new_cases)
+        
+        if new_cases != 0:
+            average = round ( new_cases / 7)
+            print(f"average case is {average}")
+            #rolling_average.append(math.ceil(new_cases / 7))
+            rounded_average = float(average.quantize(Decimal('0.00'),rounding=ROUND_HALF_UP))
+            rounded_average = rounded_average.to_integral_value()
+            print(f"average case is {average}")
+            rolling_average.append(rounded_average)
+            
+        else:
+            rolling_average.append(0)
+            
+    return rolling_average
+        
+    
+    
 
 
-2. Add the following content to the file:
-
-[Unit]
-Description=Docker Application Container Engine
-Documentation=https://docs.docker.com
-After=network.target
-
-[Service]
-Type=notify
-ExecStart=/usr/bin/dockerd -H fd://
-ExecReload=/bin/kill -s HUP $MAINPID
-LimitNOFILE=infinity
-LimitNPROC=infinity
-LimitCORE=infinity
-TasksMax=infinity
-TimeoutStartSec=0
-Delegate=yes
-KillMode=process
-Restart=always
-RestartSec=1s
-
-[Install]
-WantedBy=multi-user.target
 
 
-3. Save and close the file.
-
-4. Reload systemd to read the new unit file:
-
-sudo systemctl daemon-reload
 
 
-5. Enable the Docker service to start on boot:
+# Main function to run the analysis
+def main():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore") #Ingore warnings
+        #date = "2024-05-21"
+        base_url = "https://healthdata.gov/resource/j8mb-icvb.json"
+        target_date = input("Enter the target date in the formant (YYYY-MM-DD):")
+        full_api_data = get_testing_data(base_url)
+       # total_pcr_tests = get_total_pcr_tests(full_api_data, target_date )
+        #print(f"Total PCR tests performed up to  {target_date}  in the United States is: {total_pcr_tests}")
+       # rolling_average = calculate_rolling_average(full_api_data, date.fromisoformat(target_date))
+       # print(f"7-day rolling average of new cases per day for the last 30 days from  {target_date}:   {rolling_average}")
+       
+        
+    
+    
+        
 
-sudo systemctl enable docker
+if __name__ == "__main__":
+    main()
 
 
-6. Start the Docker service:
-
-sudo systemctl start docker
-
-
-Now, the systemctl start docker command will run automatically on reboot of the machine in Linux. You can also use sudo systemctl status docker to check the status of the Docker service.

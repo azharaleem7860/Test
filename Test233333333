@@ -1,3 +1,25 @@
+from google.adk import Agent, Task
+from google.adk.registry import RegistryClient
+
+class RootAgent(Agent):
+    def __init__(self):
+        super().__init__(agent_id="root-agent")
+        self.registry = RegistryClient()
+
+    def handle(self, task: Task) -> Task:
+        appid = task.payload.get("appid")
+        if not appid:
+            raise ValueError("Missing 'appid' in payload")
+
+        # Resolve next agent using manifest registry
+        resolved_agent = self.registry.resolve(appid=appid)
+
+        # Forward task to resolved agent
+        return Task(
+            payload=task.payload,
+            target_agent=resolved_agent
+        )
+
 from google.adk import Agent, Task, Tool, Manifest
 from typing import List
 

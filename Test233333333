@@ -1,3 +1,63 @@
+from typing import Dict, Optional
+
+class RegistryAgent:
+    def __init__(self, manifest_store: Dict[str, Dict]):
+        """
+        manifest_store: A dictionary mapping appid to manifest definitions.
+                        Example:
+                        {
+                            "com.example.myapp": {
+                                "agents": {
+                                    "analysis": {
+                                        "id": "CriticalCheckAgent:v1",
+                                        "tools": ["LambdaRuntimeInspector"],
+                                        "execution": "parallel"
+                                    },
+                                    "summarizer": {
+                                        "id": "LLMSummarizer:v1",
+                                        "input": "analysis.output"
+                                    }
+                                }
+                            },
+                            "*": { ... }  # Default manifest
+                        }
+        """
+        self.manifest_store = manifest_store
+
+    def resolve(self, appid: str, task_type: str = "analysis") -> Optional[Dict]:
+        """
+        Resolves the agent metadata for a given appid and task type.
+        Falls back to default manifest (*) if appid-specific entry is missing.
+        """
+        manifest = self.manifest_store.get(appid) or self.manifest_store.get("*")
+        if not manifest:
+            raise ValueError(f"No manifest found for appid '{appid}' or default '*'")
+
+        agent_def = manifest.get("agents", {}).get(task_type)
+        if not agent_def:
+            raise ValueError(f"No agent defined for task type '{task_type}' in manifest")
+
+        return {
+            "agent_id": agent_def["id"],
+            "tools": agent_def.get("tools", []),
+            "execution": agent_def.get("execution", "sequential"),
+            "input": agent_def.get("input", None)
+        }
+
+    def build_task(self, appid: str, payload: Dict) -> Dict:
+        """
+        Constructs a task dictionary with routing metadata.
+        """
+        agent_meta = self.resolve(appid)
+        return {
+            "appid": appid,
+            "target_agent": agent_meta["agent_id"],
+            "tools": agent_meta["tools"],
+            "execution": agent_meta["execution"],
+            "input": payload
+        }
+
+
 from google.adk import Agent, Task
 from google.adk.registry import RegistryClient
 

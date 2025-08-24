@@ -1,0 +1,115 @@
+from google.adk import Agent, Task, Tool, Manifest
+from typing import List
+
+class AnalysisAgent(Agent):
+    def __init__(self):
+        super().__init__(agent_id="analysis-agent")
+        self.manifest = Manifest.load("manifests/analysis-agent.manifest.yaml")
+
+    def handle(self, task: Task) -> List[Task]:
+        tagged = self.semantic_tag(task)
+
+        structured_task = Task(
+            payload=tagged["structured"],
+            target_agent="lambda-agent"
+        )
+        semantic_task = Task(
+            payload=tagged["semantic"],
+            target_agent="llm-agent"
+        )
+
+        return [structured_task, semantic_task]  # Parallel dispatch
+
+    def semantic_tag(self, task: Task) -> dict:
+        # Example tagging logic
+        return {
+            "structured": {"type": "workflow", "data": task.payload.get("data")},
+            "semantic": {"type": "summary", "text": task.payload.get("description")}
+        }
+
+
+from google.adk import Agent, Task, Tool
+
+class LambdaAgent(Agent):
+    def __init__(self):
+        super().__init__(agent_id="lambda-agent")
+        self.summary_tool = Tool.load("summary-tool")
+        self.upgrade_tool = Tool.load("upgrade-tool")
+
+    def handle(self, task: Task) -> Task:
+        summary = self.summary_tool.invoke(task.payload)
+        upgrade = self.upgrade_tool.invoke(task.payload)
+
+        return Task(
+            payload={"summary": summary, "upgrade": upgrade},
+            target_agent=None  # Final output
+        )
+from google.adk import Agent, Task, Tool
+
+class LLM_Agent(Agent):
+    def __init__(self):
+        super().__init__(agent_id="llm-agent")
+        self.summary_tool = Tool.load("summary-tool")
+
+    def handle(self, task: Task) -> Task:
+        summary = self.summary_tool.invoke(task.payload)
+
+        return Task(
+            payload={"semantic_summary": summary},
+            target_agent=None
+        )
+
+
+agent_id: root-agent
+entrypoint: true
+inputs:
+  - appid
+outputs:
+  - forward_to: registry-agent
+description: Receives external requests and initiates orchestration
+version: 1.0.0
+
+agent_id: registry-agent
+type: registry
+inputs:
+  - appid
+manifest_lookup: true
+outputs:
+  - resolved_agent: analysis-agent
+description: Resolves agent/tool mappings using manifest registry
+version: 1.1.0
+agent_id: analysis-agent
+type: coordinator
+inputs:
+  - resolved_appid
+routing_strategy: parallel
+outputs:
+  - structured_task: lambda-agent
+  - semantic_task: llm-agent
+description: Tags tasks and dispatches them in parallel based on context
+version: 2.0.0
+
+agent_id: lambda-agent
+type: service
+inputs:
+  - structured_task
+tools:
+  - summary-tool
+  - upgrade-tool
+outputs:
+  - structured_response
+description: Executes structured workflows and invokes shared tools
+version: 1.2.3
+agent_id: llm-agent
+type: service
+inputs:
+  - semantic_task
+tools:
+  - summary-tool
+outputs:
+  - semantic_response
+description: Synthesizes semantic summaries and natural language outputs
+version: 1.3.1
+
+
+

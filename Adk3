@@ -1,0 +1,37 @@
+import json
+import importlib
+
+def load_manifest(path: str) -> dict:
+    with open(path, 'r') as f:
+        return json.load(f)
+
+def instantiate_agent(manifest: dict, *dependencies) -> object:
+    class_path = manifest["class_path"]
+    module_name, class_name = class_path.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    cls = getattr(module, class_name)
+
+    config = manifest.get("config", {})
+    return cls(manifest["agent_name"], *dependencies, **config)
+
+
+from manifest_loader import load_manifest, instantiate_agent
+from agents.summary import SummaryAgent
+from agents.tag import TagAgent
+from agents.analysis import AnalysisAgent
+
+def main():
+    # Step 1: Manually instantiate dependencies
+    summary_agent = SummaryAgent(name="SummaryAgent", model_name="gpt-4", temperature=0.4)
+    tag_agent = TagAgent(name="TagAgent", summary_agent=summary_agent)
+    analysis_agent = AnalysisAgent(name="AnalysisAgent", tag_agent=tag_agent, summary_agent=summary_agent)
+
+    # Step 2: Load manifest and instantiate RootAgent
+    manifest = load_manifest("manifests/root_agent.json")
+    root_agent = instantiate_agent(manifest, analysis_agent)
+
+    print(f"✅ RootAgent instantiated: {root_agent}")
+    # root_agent.run()  # Optional
+
+if __name__ == "__main__":
+    main()

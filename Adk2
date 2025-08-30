@@ -1,0 +1,58 @@
+from manifest_loader import ManifestAgentLoader
+
+# Path to the root agent manifest
+ROOT_MANIFEST_PATH = "manifests/root_agent_manifest.json"
+
+# Initialize loader and bootstrap agents
+loader = ManifestAgentLoader()
+loader.load_manifest(ROOT_MANIFEST_PATH)
+
+# Retrieve the RootAgent instance
+root_agent = loader.get_agent("RootAgent")
+
+# Optional: Run or inspect the root agent
+# root_agent.run() or print(root_agent)
+
+import json
+import importlib
+from pathlib import Path
+
+class ManifestAgentLoader:
+    def __init__(self):
+        self.registry = {}
+
+    def load_manifest(self, manifest_path: str):
+        manifest = self._load_json(manifest_path)
+        self._resolve_and_instantiate(manifest)
+
+    def _load_json(self, path: str) -> dict:
+        with open(path, 'r') as f:
+            return json.load(f)
+
+    def _resolve_and_instantiate(self, manifest: dict):
+        agent_name = manifest["agent_name"]
+        if agent_name in self.registry:
+            return  # Already instantiated
+
+        # Resolve dependencies first
+        dependencies = []
+        for dep in manifest.get("dependencies", []):
+            dep_name = dep["name"] if isinstance(dep, dict) else dep
+            dep_manifest_path = f"manifests/{dep_name.lower()}_manifest.json"
+            dep_manifest = self._load_json(dep_manifest_path)
+            self._resolve_and_instantiate(dep_manifest)
+            dependencies.append(self.registry[dep_name])
+
+        # Import and instantiate agent
+        class_path = manifest["class_path"]
+        module_name, class_name = class_path.rsplit('.', 1)
+        module = importlib.import_module(module_name)
+        cls = getattr(module, class_name)
+
+        config = manifest.get("config", {})
+        instance = cls(agent_name, *dependencies, **config)
+        self.registry[agent_name] = instance
+
+    def get_agent(self, name: str):
+        return self.registry.get(name)
+
